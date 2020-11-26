@@ -4,8 +4,9 @@
 //consts
 const double pi = 3.1416;
 //global
-double fd = 0;
-double time_k = 0;
+QString NAME = "";
+double FD = 0;
+double TIME_K = 0;
 QList<double> DATA;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -63,7 +64,8 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
     wav_hdr wavHeader;
     int headerSize = sizeof(wav_hdr), filelength = 0;
 
-    const char* filePath = pathname.toStdString().c_str();
+    string fp = pathname.toStdString();
+    const char* filePath = fp.c_str();
 
     FILE* wavFile = fopen(filePath, "r");
     if (wavFile == nullptr)
@@ -83,7 +85,7 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
         int16_t *buffer = new int16_t[BUFFER_SIZE];
         while ((bytesRead = fread(buffer, sizeof buffer[0], BUFFER_SIZE / (sizeof buffer[0]), wavFile)) > 0)
         {
-            ui->textBrowser->append( "Read " + QString::number(bytesRead) + " bytes." );
+            qDebug() <<  "Read " + QString::number(bytesRead) + " bytes";
             for (int i = 0; i < BUFFER_SIZE; i++) {
                 data->append(buffer[i]);
             }
@@ -121,7 +123,7 @@ void do_fourier(QList<double> data, amp_freq *AF) {
             X_re[k] += data.at(i)*cos( (2*pi*k*i)/n );
             X_im[k] -= data.at(i)*sin( (2*pi*k*i)/n );
         }
-        f[k] = double(k) * fd / n; //fd нужно тоже подавать, тк для сэмпла и лонга они разные
+        f[k] = double(k) * FD / n; //FD нужно тоже подавать, тк для сэмпла и лонга они разные
         X_amp[k] = sqrt( X_im[k]*X_im[k] + X_re[k]*X_re[k] ) / n;
     }
 
@@ -135,5 +137,15 @@ void do_fourier(QList<double> data, amp_freq *AF) {
 void MainWindow::on_open_btn_clicked()
 {
     //open dialog
+    QString pathname = QFileDialog::getOpenFileName(0, "Открыть файл", "", "*.wav *.WAV");
+    QFile file(pathname);
+    QFileInfo fileInfo(file.fileName());
+    NAME = (fileInfo.fileName());
+
     //read_wav
+    read_wav(pathname, &DATA, &TIME_K);
+
+    //draw
+    QLineSeries *data_series = new QLineSeries();
+
 }

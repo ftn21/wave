@@ -22,7 +22,7 @@ color: rgb(0, 77, 63);</string>
     <item>
      <widget class="QTabWidget" name="file_info">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="wave">
        <attribute name="title">
@@ -48,6 +48,11 @@ color: rgb(0, 77, 63);</string>
        <attribute name="title">
         <string>file info</string>
        </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QTextBrowser" name="textBrowser"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
