@@ -3,7 +3,7 @@
 
 //consts
 const double pi = 3.1416;
-const double BLOCK = 1024;
+const int BLOCK = 1024;
 QStringList html_colours = { "#DA70D6" , "#FF00FF" , "#FF00FF" , "#BA55D3" , "#9370DB" , "#8A2BE2" ,
                              "#9400D3" , "#9932CC" , "#8B008B" , "#800080" , "#4B0082" , "#6A5ACD" ,
                              "#483D8B",  "#3CB371" , "#2E8B57" , "#228B22" , "#008000" , "#006400" ,
@@ -147,10 +147,8 @@ void do_fourier(QList<double> data, amp_freq *AF) {
     double n = data.length();
     QVector<double> X_re(n+1), X_im(n+1), X_amp(n+1), f(n+1);
 
-    for(int k = 1; k < n+1; k++) {
-        if (k == 1535)
-            qDebug() << "1535!";
-        for (int i = 0; i < n; n++) {
+    for (int k = 1; k < n+1; k++) {
+        for (int i = 0; i < n; i++) {
             X_re[k] = X_re[k] + data.at(i)*cos( (2*pi*k*i)/n );
             X_im[k] = X_im[k] - data.at(i)*sin( (2*pi*k*i)/n );
         }
@@ -213,16 +211,17 @@ void MainWindow::on_fourier_btn_clicked()
     }
     else {
         //if a file BIG
-        QList<double> block;
         int count_block = DATA.length() / BLOCK;
         //all blocks
         for (int i = 0; i < count_block; i++) {
             //forming a block
+            QList<double> block;
             for (int j = 0; j < BLOCK; j++) {
                 block.append(DATA[i*BLOCK + j]);
             }
             //fourier for each block
             do_fourier(block, &ampfreq);
+            qDebug() << "block " + QString::number(i) + " processed";
             clr_status_text("block " + QString::number(i) + " processed");
         }
     }
@@ -230,7 +229,7 @@ void MainWindow::on_fourier_btn_clicked()
 
     //draw
     QLineSeries *SPECTR_SERIES = new QLineSeries();
-    fill_series(SPECTR_SERIES, ampfreq.amp, ampfreq.freq);
+    fill_series(SPECTR_SERIES, ampfreq.freq, ampfreq.amp);
     SPECTR_SERIES->setName(NAME);
 
     //set chart
