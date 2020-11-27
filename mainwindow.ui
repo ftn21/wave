@@ -14,8 +14,8 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(223, 208, 230);
-color: rgb(0, 77, 63);</string>
+   <string notr="true">background-color: rgb(169, 204, 227);
+color: rgb(14, 98, 81);</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -50,7 +50,14 @@ color: rgb(0, 77, 63);</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QTextBrowser" name="textBrowser"/>
+         <widget class="QTextBrowser" name="textBrowser">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(46, 52, 54);
+border-color: rgb(29, 180, 137);
+color: rgb(29, 180, 137);
+gridline-color: rgb(29, 180, 137);</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -59,7 +66,7 @@ color: rgb(0, 77, 63);</string>
     <item>
      <widget class="QFrame" name="frame">
       <property name="styleSheet">
-       <string notr="true">background-color: rgb(164, 214, 193);</string>
+       <string notr="true">background-color: rgb(230, 176, 170);</string>
       </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
@@ -161,6 +168,7 @@ color: rgb(0, 77, 63);</string>
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <customwidgets>
   <customwidget>

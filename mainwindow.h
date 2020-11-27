@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <complex>
+#include <QtGlobal>
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QBarSeries>

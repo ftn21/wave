@@ -3,11 +3,19 @@
 
 //consts
 const double pi = 3.1416;
+QStringList html_colours = { "#DA70D6" , "#FF00FF" , "#FF00FF" , "#BA55D3" , "#9370DB" , "#8A2BE2" ,
+                             "#9400D3" , "#9932CC" , "#8B008B" , "#800080" , "#4B0082" , "#6A5ACD" ,
+                             "#483D8B",  "#3CB371" , "#2E8B57" , "#228B22" , "#008000" , "#006400" ,
+                             "#9ACD32" , "#6B8E23" , "#808000" , "#556B2F" , "#66CDAA" , "#8FBC8F" ,
+                             "#20B2AA" , "#008B8B" , "#008080" , "#5F9EA0" , "#4682B4" , "#0000FF" ,
+                             "#0000CD" , "#00008B" , "#000080" , "#191970" , "#DAA520" , "#B8860B" ,
+                             "#CD853F" , "#D2691E" };
 //global
 QString NAME = "";
 double FD = 0;
 double TIME_K = 0;
 QList<double> DATA;
+QList<double> T;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -75,7 +83,6 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
 
     //Read the header
     size_t bytesRead = fread(&wavHeader, 1, headerSize, wavFile);
-    ui->textBrowser->append( "Header Read " + QString::number(bytesRead) + " bytes." );
     if (bytesRead > 0)
     {
         //Read the data
@@ -85,8 +92,11 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
         int16_t *buffer = new int16_t[BUFFER_SIZE];
         while ((bytesRead = fread(buffer, sizeof buffer[0], BUFFER_SIZE / (sizeof buffer[0]), wavFile)) > 0)
         {
+            QString clr = html_colours.at(qrand() % (html_colours.length() + 1));
+            ui->statusBar->setStyleSheet("color: " + clr);
+            ui->statusBar->showMessage("Read " + QString::number(bytesRead) + " bytes");
             qDebug() <<  "Read " + QString::number(bytesRead) + " bytes";
-            for (int i = 0; i < BUFFER_SIZE; i++) {
+            for (int i = 0; i < int(bytesRead); i++) {
                 data->append(buffer[i]);
             }
         }
@@ -147,5 +157,23 @@ void MainWindow::on_open_btn_clicked()
 
     //draw
     QLineSeries *data_series = new QLineSeries();
+    data_series->setName(NAME);
 
+    //fill series
+    for (int i = 0; i < DATA.length(); i++) {
+        T.append(i*TIME_K);
+        data_series->append(T[i], DATA[i]);
+    }
+
+    //set chart
+    QChart *wave_chart = new QChart();
+    wave_chart->legend()->setVisible(true);
+    wave_chart->legend()->setAlignment(Qt::AlignBottom);
+    wave_chart->addSeries(data_series);
+    wave_chart->createDefaultAxes();
+    wave_chart->setTheme(QChart::ChartThemeBrownSand);
+    wave_chart->setAnimationOptions(QChart::NoAnimation);
+
+    //adding gui elements
+    ui->wave_view->setChart(wave_chart);
 }
