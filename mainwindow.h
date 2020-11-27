@@ -36,13 +36,21 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void read_wav(QString pathname, QList<double> *data, double *freq_dis);
+    void read_wav(QString pathname, QList<double> *data, double *time_k, double *freq_d);
     void clr_status_text(QString text);
+
+    QtCharts::QLineSeries *filtered_series;
+    QtCharts::QChart *spectr_chart;
+    QtCharts::QChart *wave_chart;
 
 private slots:
     void on_open_btn_clicked();
 
     void on_fourier_btn_clicked();
+
+    void on_filter_btn_clicked();
+
+    void on_filtered_checkBox_stateChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;

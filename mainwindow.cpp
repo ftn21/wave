@@ -23,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    ui->filtered_checkBox->hide();
 }
 
 MainWindow::~MainWindow()
@@ -80,7 +82,7 @@ void MainWindow::clr_status_text(QString text) {
     ui->statusBar->showMessage(text);
 }
 
-void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
+void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k, double *freq_d)
 {
     wav_hdr wavHeader;
     int headerSize = sizeof(wav_hdr), filelength = 0;
@@ -126,9 +128,9 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
         ui->textBrowser->append("File is:  " + QString::number(filelength) + " bytes");
         ui->textBrowser->append( "Data size:  " + QString::number(wavHeader.ChunkSize) );
 
-        // 1/samplingRate
+        // 1/samplingRate and samplingrate
         *time_k = 1.0 / wavHeader.SamplesPerSec;
-        FD = wavHeader.SamplesPerSec;
+        *freq_d = wavHeader.SamplesPerSec;
 
         // Display the sampling Rate from the header
         ui->textBrowser->append( "Sampling Rate:  " + QString::number(wavHeader.SamplesPerSec) );
@@ -143,7 +145,7 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
     fclose(wavFile);
 }
 
-void do_fourier(QList<double> data, amp_freq *AF) {
+void do_fourier(QList<double> data, double freq_d, amp_freq *AF) {
     double n = data.length();
     QVector<double> X_re(n+1), X_im(n+1), X_amp(n+1), f(n+1);
 
@@ -152,7 +154,7 @@ void do_fourier(QList<double> data, amp_freq *AF) {
             X_re[k] = X_re[k] + data.at(i)*cos( (2*pi*k*i)/n );
             X_im[k] = X_im[k] - data.at(i)*sin( (2*pi*k*i)/n );
         }
-        f[k] = double(k) * FD / n; //FD нужно тоже подавать, тк для сэмпла и лонга они разные
+        f[k] = double(k) * freq_d / n;
         X_amp[k] = sqrt( X_im[k]*X_im[k] + X_re[k]*X_re[k] ) / n;
     }
 
@@ -168,6 +170,15 @@ void fill_series(QLineSeries *series, QVector<double> X, QVector<double> Y) {
     }
 }
 
+void do_filter(amp_freq *AF, double limit) {
+    double n = AF->amp.length();
+    for (int i = 0; i < n; i++) {
+        if (AF->amp.at(i) < limit) {
+            AF->amp.replace(i, 0);
+        }
+    }
+}
+
 
 void MainWindow::on_open_btn_clicked()
 {
@@ -178,7 +189,7 @@ void MainWindow::on_open_btn_clicked()
     NAME = (fileInfo.fileName());
 
     //read_wav
-    read_wav(pathname, &DATA, &TIME_K);
+    read_wav(pathname, &DATA, &TIME_K, &FD);
 
     //draw
     QLineSeries *data_series = new QLineSeries();
@@ -191,7 +202,7 @@ void MainWindow::on_open_btn_clicked()
     }
 
     //set chart
-    QChart *wave_chart = new QChart();
+    wave_chart = new QChart();
     wave_chart->legend()->setVisible(true);
     wave_chart->legend()->setAlignment(Qt::AlignBottom);
     wave_chart->addSeries(data_series);
@@ -207,22 +218,26 @@ void MainWindow::on_fourier_btn_clicked()
 {
     //if a file not big
     if (DATA.length() < 1600 /*2*BLOCK*/) {
-        do_fourier(DATA, &ampfreq);
+        do_fourier(DATA, FD, &ampfreq);
     }
     else {
         //if a file BIG
         int count_block = DATA.length() / BLOCK;
+
         //all blocks
         for (int i = 0; i < count_block; i++) {
+
             //forming a block
             QList<double> block;
             for (int j = 0; j < BLOCK; j++) {
                 block.append(DATA[i*BLOCK + j]);
             }
+
             //fourier for each block
-            do_fourier(block, &ampfreq);
+            do_fourier(block, FD, &ampfreq);
+
             qDebug() << "block " + QString::number(i) + " processed";
-            clr_status_text("block " + QString::number(i) + " processed");
+            //clr_status_text("block " + QString::number(i) + " processed");
         }
     }
     clr_status_text("fourier done");
@@ -233,7 +248,7 @@ void MainWindow::on_fourier_btn_clicked()
     SPECTR_SERIES->setName(NAME);
 
     //set chart
-    QChart *spectr_chart = new QChart();
+    spectr_chart = new QChart();
     spectr_chart->legend()->setVisible(true);
     spectr_chart->legend()->setAlignment(Qt::AlignBottom);
     spectr_chart->addSeries(SPECTR_SERIES);
@@ -243,4 +258,35 @@ void MainWindow::on_fourier_btn_clicked()
 
     //adding gui elements
     ui->spectr_view->setChart(spectr_chart);
+}
+
+void MainWindow::on_filter_btn_clicked()
+{
+    //filter
+    do_filter(&ampfreq, 60);
+    clr_status_text("data filtered");
+
+    //draw
+    filtered_series = new QLineSeries();
+    filtered_series->setName("filtered " + NAME);
+    fill_series(filtered_series, ampfreq.freq, ampfreq.amp);
+
+    //adding gui elements
+    spectr_chart->addSeries(filtered_series);
+    ui->spectr_view->repaint();
+    ui->filtered_checkBox->setEnabled(true);
+    ui->filtered_checkBox->show();
+    ui->filter_btn->setEnabled(false);
+}
+
+void MainWindow::on_filtered_checkBox_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        clr_status_text("filtered series are showed");
+        spectr_chart->addSeries(filtered_series);
+    }
+    else {
+        clr_status_text("filtered series are hidden");
+        spectr_chart->removeSeries(filtered_series);
+    }
 }

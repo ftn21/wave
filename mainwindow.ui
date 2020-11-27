@@ -170,9 +170,15 @@ p, li { white-space: pre-wrap; }
         </spacer>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="filtered_checkBox">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
-          <string>CheckBox</string>
+          <string>filtered</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
