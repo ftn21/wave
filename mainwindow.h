@@ -37,9 +37,12 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void read_wav(QString pathname, QList<double> *data, double *freq_dis);
+    void clr_status_text(QString text);
 
 private slots:
     void on_open_btn_clicked();
+
+    void on_fourier_btn_clicked();
 
 private:
     Ui::MainWindow *ui;

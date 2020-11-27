@@ -3,6 +3,7 @@
 
 //consts
 const double pi = 3.1416;
+const double BLOCK = 1024;
 QStringList html_colours = { "#DA70D6" , "#FF00FF" , "#FF00FF" , "#BA55D3" , "#9370DB" , "#8A2BE2" ,
                              "#9400D3" , "#9932CC" , "#8B008B" , "#800080" , "#4B0082" , "#6A5ACD" ,
                              "#483D8B",  "#3CB371" , "#2E8B57" , "#228B22" , "#008000" , "#006400" ,
@@ -36,6 +37,9 @@ struct amp_freq {
     QVector<double> re;
 };
 
+//one more global
+amp_freq ampfreq;
+
 typedef struct  WAV_HEADER
 {
     /* RIFF Chunk Descriptor */
@@ -56,6 +60,9 @@ typedef struct  WAV_HEADER
     uint32_t        Subchunk2Size;  // Sampled data length
 } wav_hdr;
 
+//one more global
+wav_hdr HEADER;
+
 int getFileSize(FILE* inFile)
 {
     int fileSize = 0;
@@ -65,6 +72,12 @@ int getFileSize(FILE* inFile)
 
     fseek(inFile, 0, SEEK_SET);
     return fileSize;
+}
+
+void MainWindow::clr_status_text(QString text) {
+    QString clr = html_colours.at(qrand() % (html_colours.length() + 1));
+    ui->statusBar->setStyleSheet("color: " + clr);
+    ui->statusBar->showMessage(text);
 }
 
 void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
@@ -83,19 +96,22 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
 
     //Read the header
     size_t bytesRead = fread(&wavHeader, 1, headerSize, wavFile);
+    //one more for later saving
+    fread(&HEADER, 1, headerSize, wavFile);
     if (bytesRead > 0)
     {
         //Read the data
-        uint16_t bytesPerSample = wavHeader.bitsPerSample / 8;      //Number     of bytes per sample
+        uint16_t bytesPerSample = wavHeader.bitsPerSample / 8;      //Number of bytes per sample
         uint64_t numSamples = wavHeader.ChunkSize / bytesPerSample; //How many samples are in the wav file?
         static const uint16_t BUFFER_SIZE = 4096;
         int16_t *buffer = new int16_t[BUFFER_SIZE];
         while ((bytesRead = fread(buffer, sizeof buffer[0], BUFFER_SIZE / (sizeof buffer[0]), wavFile)) > 0)
         {
-            QString clr = html_colours.at(qrand() % (html_colours.length() + 1));
-            ui->statusBar->setStyleSheet("color: " + clr);
-            ui->statusBar->showMessage("Read " + QString::number(bytesRead) + " bytes");
+            //info
+            clr_status_text("Read " + QString::number(bytesRead) + " bytes");
             qDebug() <<  "Read " + QString::number(bytesRead) + " bytes";
+
+            //fill data array
             for (int i = 0; i < int(bytesRead); i++) {
                 data->append(buffer[i]);
             }
@@ -105,21 +121,24 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k)
         buffer = nullptr;
         filelength = getFileSize(wavFile);
 
-        //ui->textBrowser->append()
-        "File is:" + QString::number(filelength) + " bytes.";
-        ui->textBrowser->append( "Data size:" + QString::number(wavHeader.ChunkSize) );
+        ui->textBrowser->append("<B>" + pathname + "</B>");
+        ui->textBrowser->append("");
+        ui->textBrowser->append("File is:  " + QString::number(filelength) + " bytes");
+        ui->textBrowser->append( "Data size:  " + QString::number(wavHeader.ChunkSize) );
 
+        // 1/samplingRate
         *time_k = 1.0 / wavHeader.SamplesPerSec;
+        FD = wavHeader.SamplesPerSec;
 
         // Display the sampling Rate from the header
-        ui->textBrowser->append( "Sampling Rate:" + QString::number(wavHeader.SamplesPerSec) );
-        ui->textBrowser->append( "Number of bits used:" + QString::number(wavHeader.bitsPerSample ) );
-        ui->textBrowser->append( "Number of channels:" + QString::number(wavHeader.NumOfChan ) );
-        ui->textBrowser->append( "Number of bytes per second :" + QString::number(wavHeader.bytesPerSec ) );
-        ui->textBrowser->append( "Data length:" + QString::number(wavHeader.Subchunk2Size ) );
-        ui->textBrowser->append( "Audio Format:" + QString::number(wavHeader.AudioFormat ) );
+        ui->textBrowser->append( "Sampling Rate:  " + QString::number(wavHeader.SamplesPerSec) );
+        ui->textBrowser->append( "Number of bits used:  " + QString::number(wavHeader.bitsPerSample ) );
+        ui->textBrowser->append( "Number of channels:  " + QString::number(wavHeader.NumOfChan ) );
+        ui->textBrowser->append( "Number of bytes per second :  " + QString::number(wavHeader.bytesPerSec ) );
+        ui->textBrowser->append( "Data length:  " + QString::number(wavHeader.Subchunk2Size ) );
+        ui->textBrowser->append( "Audio Format:  " + QString::number(wavHeader.AudioFormat ) );
         // Audio format 1=PCM,6=mulaw,7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
-        ui->textBrowser->append( "Block align:" + QString::number(wavHeader.blockAlign ) );
+        //ui->textBrowser->append( "Block align:  " + QString::number(wavHeader.blockAlign ) );
     }
     fclose(wavFile);
 }
@@ -129,9 +148,11 @@ void do_fourier(QList<double> data, amp_freq *AF) {
     QVector<double> X_re(n+1), X_im(n+1), X_amp(n+1), f(n+1);
 
     for(int k = 1; k < n+1; k++) {
+        if (k == 1535)
+            qDebug() << "1535!";
         for (int i = 0; i < n; n++) {
-            X_re[k] += data.at(i)*cos( (2*pi*k*i)/n );
-            X_im[k] -= data.at(i)*sin( (2*pi*k*i)/n );
+            X_re[k] = X_re[k] + data.at(i)*cos( (2*pi*k*i)/n );
+            X_im[k] = X_im[k] - data.at(i)*sin( (2*pi*k*i)/n );
         }
         f[k] = double(k) * FD / n; //FD нужно тоже подавать, тк для сэмпла и лонга они разные
         X_amp[k] = sqrt( X_im[k]*X_im[k] + X_re[k]*X_re[k] ) / n;
@@ -141,6 +162,12 @@ void do_fourier(QList<double> data, amp_freq *AF) {
     AF->freq.append(f);
     AF->re.append(X_re);
     AF->im.append(X_im);
+}
+
+void fill_series(QLineSeries *series, QVector<double> X, QVector<double> Y) {
+    for (int i = 0; i < X.length(); i++) {
+        series->append(X[i], Y[i]);
+    }
 }
 
 
@@ -176,4 +203,45 @@ void MainWindow::on_open_btn_clicked()
 
     //adding gui elements
     ui->wave_view->setChart(wave_chart);
+}
+
+void MainWindow::on_fourier_btn_clicked()
+{
+    //if a file not big
+    if (DATA.length() < 1600 /*2*BLOCK*/) {
+        do_fourier(DATA, &ampfreq);
+    }
+    else {
+        //if a file BIG
+        QList<double> block;
+        int count_block = DATA.length() / BLOCK;
+        //all blocks
+        for (int i = 0; i < count_block; i++) {
+            //forming a block
+            for (int j = 0; j < BLOCK; j++) {
+                block.append(DATA[i*BLOCK + j]);
+            }
+            //fourier for each block
+            do_fourier(block, &ampfreq);
+            clr_status_text("block " + QString::number(i) + " processed");
+        }
+    }
+    clr_status_text("fourier done");
+
+    //draw
+    QLineSeries *SPECTR_SERIES = new QLineSeries();
+    fill_series(SPECTR_SERIES, ampfreq.amp, ampfreq.freq);
+    SPECTR_SERIES->setName(NAME);
+
+    //set chart
+    QChart *spectr_chart = new QChart();
+    spectr_chart->legend()->setVisible(true);
+    spectr_chart->legend()->setAlignment(Qt::AlignBottom);
+    spectr_chart->addSeries(SPECTR_SERIES);
+    spectr_chart->createDefaultAxes();
+    spectr_chart->setTheme(QChart::ChartThemeBrownSand);
+    spectr_chart->setAnimationOptions(QChart::NoAnimation);
+
+    //adding gui elements
+    ui->spectr_view->setChart(spectr_chart);
 }

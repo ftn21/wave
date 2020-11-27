@@ -14,15 +14,24 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(169, 204, 227);
-color: rgb(14, 98, 81);</string>
+   <string notr="true">background-color: rgb(243, 236, 224);
+color: rgb(46, 52, 54);</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QTabWidget" name="file_info">
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
+      </property>
+      <property name="elideMode">
+       <enum>Qt::ElideNone</enum>
       </property>
       <widget class="QWidget" name="wave">
        <attribute name="title">
@@ -30,7 +39,14 @@ color: rgb(14, 98, 81);</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QChartView" name="wave_view"/>
+         <widget class="QChartView" name="wave_view">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(243, 236, 224);</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -40,7 +56,14 @@ color: rgb(14, 98, 81);</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QChartView" name="spectr_view"/>
+         <widget class="QChartView" name="spectr_view">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(243, 236, 224);</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -51,11 +74,31 @@ color: rgb(14, 98, 81);</string>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
          <widget class="QTextBrowser" name="textBrowser">
+          <property name="font">
+           <font>
+            <family>Ubuntu Mono</family>
+            <pointsize>16</pointsize>
+           </font>
+          </property>
           <property name="styleSheet">
-           <string notr="true">background-color: rgb(46, 52, 54);
-border-color: rgb(29, 180, 137);
-color: rgb(29, 180, 137);
-gridline-color: rgb(29, 180, 137);</string>
+           <string notr="true">background-color: rgb(243, 236, 224);
+color: rgb(162, 89, 73);</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Box</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+          <property name="lineWidth">
+           <number>4</number>
+          </property>
+          <property name="html">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu Mono'; font-size:16pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -66,13 +109,13 @@ gridline-color: rgb(29, 180, 137);</string>
     <item>
      <widget class="QFrame" name="frame">
       <property name="styleSheet">
-       <string notr="true">background-color: rgb(230, 176, 170);</string>
+       <string notr="true">background-color: rgb(226, 203, 187);</string>
       </property>
       <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+       <enum>QFrame::NoFrame</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+       <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
