@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-//consts
+//"consts"
 const double pi = 3.1416;
 const int BLOCK = 1024;
 QStringList html_colours = { "#DA70D6" , "#FF00FF" , "#FF00FF" , "#BA55D3" , "#9370DB" , "#8A2BE2" ,
@@ -25,6 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     ui->filtered_checkBox->hide();
+    ui->amps_checkBox->hide();
+    ui->corr_checkBox->hide();
+    ui->spectr_checkBox->hide();
+    ui->wave_checkBox->hide();
 }
 
 MainWindow::~MainWindow()
@@ -110,12 +114,11 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k,
         while ((bytesRead = fread(buffer, sizeof buffer[0], BUFFER_SIZE / (sizeof buffer[0]), wavFile)) > 0)
         {
             //info
-            clr_status_text("Read " + QString::number(bytesRead) + " bytes");
             qDebug() <<  "Read " + QString::number(bytesRead) + " bytes";
 
             //fill data array
             for (int i = 0; i < int(bytesRead); i++) {
-                data->append(buffer[i]);
+                data->append(buffer[i]/32768.0);
             }
         }
 
@@ -192,7 +195,7 @@ void MainWindow::on_open_btn_clicked()
     read_wav(pathname, &DATA, &TIME_K, &FD);
 
     //draw
-    QLineSeries *data_series = new QLineSeries();
+    data_series = new QLineSeries();
     data_series->setName(NAME);
 
     //fill series
@@ -200,6 +203,9 @@ void MainWindow::on_open_btn_clicked()
         T.append(i*TIME_K);
         data_series->append(T[i], DATA[i]);
     }
+
+    //info
+    clr_status_text(NAME + " succsesfully loaded");
 
     //set chart
     wave_chart = new QChart();
@@ -212,6 +218,7 @@ void MainWindow::on_open_btn_clicked()
 
     //adding gui elements
     ui->wave_view->setChart(wave_chart);
+    ui->wave_checkBox->show();
 }
 
 void MainWindow::on_fourier_btn_clicked()
@@ -243,7 +250,7 @@ void MainWindow::on_fourier_btn_clicked()
     clr_status_text("fourier done");
 
     //draw
-    QLineSeries *SPECTR_SERIES = new QLineSeries();
+    SPECTR_SERIES = new QLineSeries();
     fill_series(SPECTR_SERIES, ampfreq.freq, ampfreq.amp);
     SPECTR_SERIES->setName(NAME);
 
@@ -258,6 +265,8 @@ void MainWindow::on_fourier_btn_clicked()
 
     //adding gui elements
     ui->spectr_view->setChart(spectr_chart);
+    ui->fourier_btn->setEnabled(false);
+    ui->spectr_checkBox->show();
 }
 
 void MainWindow::on_filter_btn_clicked()
@@ -288,5 +297,104 @@ void MainWindow::on_filtered_checkBox_stateChanged(int arg1)
     else {
         clr_status_text("filtered series are hidden");
         spectr_chart->removeSeries(filtered_series);
+    }
+}
+
+void MainWindow::on_corr_btn_clicked()
+{
+    corr_series = new QLineSeries();
+    amp_series = new QLineSeries();
+
+    QList<double> data_sample;
+    double time_k_sample, fd_sample;
+    double mx, my, dx, dy, k;
+
+    read_wav("/home/mitya/Documents/MAI/5sem/StatDin/clave_sample.wav", &data_sample, &time_k_sample, &fd_sample);
+
+    int divk = round(time_k_sample / TIME_K);
+    double count = (DATA.length() + 1) / divk - data_sample.length();
+    double n = data_sample.length();
+
+    //мат ожидание
+    for (int i = 0; i < count; i++) {
+        mx = 0;
+        my = 0;
+        for (int j = 0; j < n; j++) {
+            mx += DATA.at(divk*i + j);
+            my += data_sample.at(j);
+        }
+        mx /= n;
+        my /= n;
+        amp_series->append(time_k_sample*i, DATA.at(divk*i));
+    }
+
+    //дисперсия
+    for (int i = 0; i < count; i++) {
+        dx = 0;
+        dy = 0;
+        for (int j = 0; j < n; j++) {
+            dx += ( DATA.at(divk*i + j) - mx ) * ( DATA.at(divk*i + j) - mx );
+            dy += ( data_sample.at(j) - my ) * ( data_sample.at(j) - my );
+        }
+        dx /= n;
+        dy /= n;
+    }
+
+    //корреляция
+    for (int i = 0; i < count; i++) {
+        k = 0;
+        for (int j = 0; j < n; j++) {
+            k += ( DATA.at(divk*i + j) - mx ) * ( data_sample.at(j) - my );
+        }
+        k /= sqrt(dx*dy);
+        corr_series->append(time_k_sample*i, k);
+    }
+
+    //adding gui elements
+    amp_series->setName("amps");
+    corr_series->setName("correlation");
+    wave_chart->addSeries(amp_series);
+    wave_chart->addSeries(corr_series);
+    ui->wave_view->repaint();
+
+    //btns&checkBoxes
+    ui->corr_btn->setEnabled(false);
+    ui->corr_checkBox->show();
+    ui->amps_checkBox->show();
+}
+
+void MainWindow::on_amps_checkBox_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        clr_status_text("amps series are showed");
+        wave_chart->addSeries(amp_series);
+    }
+    else {
+        clr_status_text("amp series are hidden");
+        wave_chart->removeSeries(amp_series);
+    }
+}
+
+void MainWindow::on_corr_checkBox_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        clr_status_text("correlation series are showed");
+        wave_chart->addSeries(corr_series);
+    }
+    else {
+        clr_status_text("correlation series are hidden");
+        wave_chart->removeSeries(corr_series);
+    }
+}
+
+void MainWindow::on_wave_checkBox_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        clr_status_text("wave series are showed");
+        wave_chart->addSeries(data_series);
+    }
+    else {
+        clr_status_text("wave series are hidden");
+        wave_chart->removeSeries(data_series);
     }
 }

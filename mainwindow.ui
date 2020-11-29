@@ -28,7 +28,7 @@ color: rgb(46, 52, 54);</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -66,6 +66,11 @@ color: rgb(46, 52, 54);</string>
          </widget>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>correlation</string>
+       </attribute>
       </widget>
       <widget class="QWidget" name="fileinfo">
        <attribute name="title">
@@ -147,9 +152,9 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pack_btn">
+        <widget class="QPushButton" name="corr_btn">
          <property name="text">
-          <string>pack</string>
+          <string>correlation</string>
          </property>
         </widget>
        </item>
@@ -164,10 +169,20 @@ p, li { white-space: pre-wrap; }
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>80</height>
+           <height>50</height>
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="spectr_checkBox">
+         <property name="text">
+          <string>spectre</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="filtered_checkBox">
@@ -183,16 +198,45 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_2">
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="wave_checkBox">
          <property name="text">
-          <string>CheckBox</string>
+          <string>wave</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_3">
+        <widget class="QCheckBox" name="amps_checkBox">
          <property name="text">
-          <string>CheckBox</string>
+          <string>amps</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="corr_checkBox">
+         <property name="text">
+          <string>corr</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -207,7 +251,7 @@ p, li { white-space: pre-wrap; }
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>100</height>
+           <height>50</height>
           </size>
          </property>
         </spacer>

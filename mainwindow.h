@@ -42,6 +42,10 @@ public:
     QtCharts::QLineSeries *filtered_series;
     QtCharts::QChart *spectr_chart;
     QtCharts::QChart *wave_chart;
+    QtCharts::QLineSeries *corr_series;
+    QtCharts::QLineSeries *amp_series;
+    QtCharts::QLineSeries *data_series;
+    QtCharts::QLineSeries *SPECTR_SERIES;
 
 private slots:
     void on_open_btn_clicked();
@@ -51,6 +55,14 @@ private slots:
     void on_filter_btn_clicked();
 
     void on_filtered_checkBox_stateChanged(int arg1);
+
+    void on_corr_btn_clicked();
+
+    void on_amps_checkBox_stateChanged(int arg1);
+
+    void on_corr_checkBox_stateChanged(int arg1);
+
+    void on_wave_checkBox_stateChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
