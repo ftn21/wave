@@ -255,16 +255,16 @@ void MainWindow::on_fourier_btn_clicked()
     SPECTR_SERIES->setName(NAME);
 
     //set chart
-    spectr_chart = new QChart();
-    spectr_chart->legend()->setVisible(true);
-    spectr_chart->legend()->setAlignment(Qt::AlignBottom);
-    spectr_chart->addSeries(SPECTR_SERIES);
-    spectr_chart->createDefaultAxes();
-    spectr_chart->setTheme(QChart::ChartThemeBrownSand);
-    spectr_chart->setAnimationOptions(QChart::NoAnimation);
+    spectre_chart = new QChart();
+    spectre_chart->legend()->setVisible(true);
+    spectre_chart->legend()->setAlignment(Qt::AlignBottom);
+    spectre_chart->addSeries(SPECTR_SERIES);
+    spectre_chart->createDefaultAxes();
+    spectre_chart->setTheme(QChart::ChartThemeBrownSand);
+    spectre_chart->setAnimationOptions(QChart::NoAnimation);
 
     //adding gui elements
-    ui->spectr_view->setChart(spectr_chart);
+    ui->spectr_view->setChart(spectre_chart);
     ui->fourier_btn->setEnabled(false);
     ui->spectr_checkBox->show();
 }
@@ -272,7 +272,7 @@ void MainWindow::on_fourier_btn_clicked()
 void MainWindow::on_filter_btn_clicked()
 {
     //filter
-    do_filter(&ampfreq, 60);
+    do_filter(&ampfreq, 0.17);
     clr_status_text("data filtered");
 
     //draw
@@ -281,7 +281,7 @@ void MainWindow::on_filter_btn_clicked()
     fill_series(filtered_series, ampfreq.freq, ampfreq.amp);
 
     //adding gui elements
-    spectr_chart->addSeries(filtered_series);
+    spectre_chart->addSeries(filtered_series);
     ui->spectr_view->repaint();
     ui->filtered_checkBox->setEnabled(true);
     ui->filtered_checkBox->show();
@@ -292,11 +292,11 @@ void MainWindow::on_filtered_checkBox_stateChanged(int arg1)
 {
     if (arg1 == 2) {
         clr_status_text("filtered series are showed");
-        spectr_chart->addSeries(filtered_series);
+        spectre_chart->addSeries(filtered_series);
     }
     else {
         clr_status_text("filtered series are hidden");
-        spectr_chart->removeSeries(filtered_series);
+        spectre_chart->removeSeries(filtered_series);
     }
 }
 
@@ -341,21 +341,30 @@ void MainWindow::on_corr_btn_clicked()
     }
 
     //корреляция
+    QList<double> corr;
     for (int i = 0; i < count; i++) {
         k = 0;
         for (int j = 0; j < n; j++) {
             k += ( DATA.at(divk*i + j) - mx ) * ( data_sample.at(j) - my );
         }
         k /= sqrt(dx*dy);
+        corr.append(k);
         corr_series->append(time_k_sample*i, k);
     }
 
-    //adding gui elements
+    //setting chart & adding gui elements
     amp_series->setName("amps");
     corr_series->setName("correlation");
-    wave_chart->addSeries(amp_series);
-    wave_chart->addSeries(corr_series);
-    ui->wave_view->repaint();
+    corr_chart = new QChart();
+    //corr_chart->addSeries(amp_series);
+    corr_chart->addSeries(corr_series);
+    corr_chart->legend()->setVisible(true);
+    corr_chart->legend()->setAlignment(Qt::AlignBottom);
+    corr_chart->createDefaultAxes();
+    corr_chart->setTheme(QChart::ChartThemeBrownSand);
+    corr_chart->setAnimationOptions(QChart::NoAnimation);
+
+    ui->corr_view->setChart(corr_chart);
 
     //btns&checkBoxes
     ui->corr_btn->setEnabled(false);
@@ -367,11 +376,11 @@ void MainWindow::on_amps_checkBox_stateChanged(int arg1)
 {
     if (arg1 == 2) {
         clr_status_text("amps series are showed");
-        wave_chart->addSeries(amp_series);
+        corr_chart->addSeries(amp_series);
     }
     else {
         clr_status_text("amp series are hidden");
-        wave_chart->removeSeries(amp_series);
+        corr_chart->removeSeries(amp_series);
     }
 }
 
@@ -379,11 +388,11 @@ void MainWindow::on_corr_checkBox_stateChanged(int arg1)
 {
     if (arg1 == 2) {
         clr_status_text("correlation series are showed");
-        wave_chart->addSeries(corr_series);
+        corr_chart->addSeries(corr_series);
     }
     else {
         clr_status_text("correlation series are hidden");
-        wave_chart->removeSeries(corr_series);
+        corr_chart->removeSeries(corr_series);
     }
 }
 
@@ -396,5 +405,91 @@ void MainWindow::on_wave_checkBox_stateChanged(int arg1)
     else {
         clr_status_text("wave series are hidden");
         wave_chart->removeSeries(data_series);
+    }
+}
+
+
+void MainWindow::on_proc_btn_clicked()
+{
+    QList<double> data_sample;
+    double time_k_sample, fd_sample;
+
+    read_wav("/home/mitya/Documents/MAI/5sem/StatDin/clave_sample.wav", &data_sample, &time_k_sample, &fd_sample);
+
+    int count = ceil(0.0377/time_k_sample);
+
+    QVector<double> data1(count), data2(count);
+
+    double v1, v2;
+    for (int i = 0; i < count; i++) {
+        v1 = data_sample.at(i) * sin( 2*pi*(i*time_k_sample) * 1297 );
+        v2 = data_sample.at(i) * sin( 2*pi*(i*time_k_sample) * 3891 );
+
+        data1[i] = v1;
+        data2[i] = v2;
+    }
+
+    int st = 2*round(1/(3891*time_k_sample));
+
+    int w1 = 4*round(1/(1297*time_k_sample));
+    int w2 = 4*round(1/(3891*time_k_sample));
+
+    int n = (count - 2*w1) / st;
+
+    QVector<double> fr1_A(n), fr2_A(n), time_list(n);
+
+    for (int i = 0; i < n; i++) {
+        v1 = 0;
+        for (int j = -w1; j < w1; j++) {
+            v1 += data1.at(w1 + i*st + j);
+        }
+        v1 /= 2*w1 + 1;
+        fr1_A[i] = v1;
+
+        v2 = 0;
+        for (int j = -w2; j < w2; j++) {
+            v2 += data2.at(w2 + i*st + j);
+        }
+        v2 /= 2*w2 + 1;
+        fr2_A[i] = v2;
+
+        time_list[i] = (i*st*time_k_sample);
+    }
+
+    //set series
+    QLineSeries *fr1_series = new QLineSeries();
+    QLineSeries *fr2_series = new QLineSeries();
+    fr1_series->setName("fr1");
+    fr2_series->setName("fr2");
+
+    fill_series(fr1_series, time_list, fr1_A);
+    fill_series(fr2_series, time_list, fr2_A);
+
+    //set chart
+    proc_chart = new QChart();
+    proc_chart->legend()->setVisible(true);
+    proc_chart->legend()->setAlignment(Qt::AlignBottom);
+    proc_chart->addSeries(fr1_series);
+    proc_chart->addSeries(fr2_series);
+    proc_chart->createDefaultAxes();
+    proc_chart->setTheme(QChart::ChartThemeBrownSand);
+    proc_chart->setAnimationOptions(QChart::NoAnimation);
+
+    //adding gui elements
+    ui->proc_view->setChart(proc_chart);
+    ui->proc_btn->setEnabled(false);
+    //ui->spectr_checkBox->show();
+
+}
+
+void MainWindow::on_spectr_checkBox_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        clr_status_text("spectre series are showed");
+        spectre_chart->addSeries(SPECTR_SERIES);
+    }
+    else {
+        clr_status_text("spectre series are hidden");
+        spectre_chart->removeSeries(SPECTR_SERIES);
     }
 }
