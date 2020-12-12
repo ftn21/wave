@@ -28,7 +28,7 @@ color: rgb(46, 52, 54);</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -156,6 +156,13 @@ p, li { white-space: pre-wrap; }
         <widget class="QPushButton" name="open_btn">
          <property name="text">
           <string>open</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="save_btn">
+         <property name="text">
+          <string>save</string>
          </property>
         </widget>
        </item>

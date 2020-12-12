@@ -37,6 +37,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void read_wav(QString pathname, QList<double> *data, double *time_k, double *freq_d);
+    void save_wav(QList<double> data, double time_k, QString pathname);
     void clr_status_text(QString text);
 
     QtCharts::QLineSeries *filtered_series;
@@ -69,6 +70,9 @@ private slots:
     void on_proc_btn_clicked();
 
     void on_spectr_checkBox_stateChanged(int arg1);
+
+    void on_prepare_btn_clicked();
+    void on_save_btn_clicked();
 
 private:
     Ui::MainWindow *ui;

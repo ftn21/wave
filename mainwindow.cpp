@@ -109,7 +109,7 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k,
         //Read the data
         uint16_t bytesPerSample = wavHeader.bitsPerSample / 8;      //Number of bytes per sample
         uint64_t numSamples = wavHeader.ChunkSize / bytesPerSample; //How many samples are in the wav file?
-        static const uint16_t BUFFER_SIZE = 4096;
+        static const uint16_t BUFFER_SIZE = 2048;
         int16_t *buffer = new int16_t[BUFFER_SIZE];
         while ((bytesRead = fread(buffer, sizeof buffer[0], BUFFER_SIZE / (sizeof buffer[0]), wavFile)) > 0)
         {
@@ -146,6 +146,95 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k,
         //ui->textBrowser->append( "Block align:  " + QString::number(wavHeader.blockAlign ) );
     }
     fclose(wavFile);
+}
+
+void MainWindow::save_wav(QList<double> data, double time_k, QString pathname) {
+        wav_hdr wavHeader;
+        int headerSize = sizeof(wav_hdr), filelength = 0;
+
+        char c = 'R';
+        char *pc = &c;
+        wavHeader.RIFF[0] = *pc;
+        c = 'I';
+        wavHeader.RIFF[1] = *pc;
+        c = 'F';
+        wavHeader.RIFF[2] = *pc;
+        c = 'F';
+        wavHeader.RIFF[3] = *pc;
+
+        c = 'W';
+        wavHeader.WAVE[0] = *pc;
+        c = 'A';
+        wavHeader.WAVE[1] = *pc;
+        c = 'V';
+        wavHeader.WAVE[2] = *pc;
+        c = 'E';
+        wavHeader.WAVE[3] = *pc;
+
+        c = 'f';
+        wavHeader.fmt[0] = *pc;
+        c = 'm';
+        wavHeader.fmt[1] = *pc;
+        c = 't';
+        wavHeader.fmt[2] = *pc;
+        c = ' ';
+        wavHeader.fmt[3] = *pc;
+
+        wavHeader.Subchunk1Size = 16;
+        wavHeader.AudioFormat = 1;
+        wavHeader.NumOfChan = 1;
+        wavHeader.SamplesPerSec = round(1 / time_k);
+
+        wavHeader.blockAlign = 2;
+        wavHeader.bytesPerSec= wavHeader.SamplesPerSec * wavHeader.blockAlign;
+
+        /*
+        wavHeader.bytesPerSec = 2;
+        wavHeader.blockAlign = wavHeader.SamplesPerSec * wavHeader.blockAlign;
+        */
+
+        wavHeader.bitsPerSample = wavHeader.blockAlign*8;
+
+        c = 'd';
+        wavHeader.Subchunk2ID[0] = *pc;
+        c = 'a';
+        wavHeader.Subchunk2ID[1] = *pc;
+        c = 't';
+        wavHeader.Subchunk2ID[2] = *pc;
+        c = 'a';
+        wavHeader.Subchunk2ID[3] = *pc;
+
+        wavHeader.Subchunk2Size = wavHeader.blockAlign*data.length();
+        wavHeader.ChunkSize = wavHeader.Subchunk2Size + 36;
+
+        cout << "File is                    :" << filelength << " bytes." << endl;
+        cout << "RIFF header                :" << wavHeader.RIFF[0] << wavHeader.RIFF[1] << wavHeader.RIFF[2] << wavHeader.RIFF[3] << endl;
+        cout << "WAVE header                :" << wavHeader.WAVE[0] << wavHeader.WAVE[1] << wavHeader.WAVE[2] << wavHeader.WAVE[3] << endl;
+        cout << "FMT                        :" << wavHeader.fmt[0] << wavHeader.fmt[1] << wavHeader.fmt[2] << wavHeader.fmt[3] << endl;
+        cout << "Data size                  :" << wavHeader.ChunkSize << endl;
+        cout << "Sampling Rate              :" << wavHeader.SamplesPerSec << endl;
+        cout << "Number of bits used        :" << wavHeader.bitsPerSample << endl;
+        cout << "Number of channels         :" << wavHeader.NumOfChan << endl;
+        cout << "Number of bytes per second :" << wavHeader.bytesPerSec << endl;
+        cout << "Data length                :" << wavHeader.Subchunk2Size << endl;
+        cout << "Audio Format               :" << wavHeader.AudioFormat << endl;
+        cout << "Block align                :" << wavHeader.blockAlign << endl;
+        cout << "Data string                :" << wavHeader.Subchunk2ID[0] << wavHeader.Subchunk2ID[1] << wavHeader.Subchunk2ID[2] << wavHeader.Subchunk2ID[3] << endl;
+
+        string fp = pathname.toStdString();
+        const char* filePath = fp.c_str();
+
+        FILE* wavFile = fopen(filePath, "w");
+        fwrite(&wavHeader, 1, headerSize, wavFile);
+
+        short int w = 0;
+        for (int i = 0; i < data.length(); i++) {
+            w = round(data[i]*32768);
+            fwrite(&w, 2 , 1, wavFile);
+        }
+        cout << sizeof(w);
+
+        fclose(wavFile);
 }
 
 void do_fourier(QList<double> data, double freq_d, amp_freq *AF) {
@@ -272,7 +361,7 @@ void MainWindow::on_fourier_btn_clicked()
 void MainWindow::on_filter_btn_clicked()
 {
     //filter
-    do_filter(&ampfreq, 0.17);
+    do_filter(&ampfreq, 0.01);
     clr_status_text("data filtered");
 
     //draw
@@ -311,7 +400,7 @@ void MainWindow::on_corr_btn_clicked()
 
     read_wav("/home/mitya/Documents/MAI/5sem/StatDin/clave_sample.wav", &data_sample, &time_k_sample, &fd_sample);
 
-    int divk = round(time_k_sample / TIME_K);
+    double divk = time_k_sample / TIME_K;
     double count = (DATA.length() + 1) / divk - data_sample.length();
     double n = data_sample.length();
 
@@ -347,7 +436,7 @@ void MainWindow::on_corr_btn_clicked()
         for (int j = 0; j < n; j++) {
             k += ( DATA.at(divk*i + j) - mx ) * ( data_sample.at(j) - my );
         }
-        k /= sqrt(dx*dy);
+        k /= sqrt(dx*dy)*n;
         corr.append(k);
         corr_series->append(time_k_sample*i, k);
     }
@@ -356,7 +445,7 @@ void MainWindow::on_corr_btn_clicked()
     amp_series->setName("amps");
     corr_series->setName("correlation");
     corr_chart = new QChart();
-    //corr_chart->addSeries(amp_series);
+    corr_chart->addSeries(amp_series);
     corr_chart->addSeries(corr_series);
     corr_chart->legend()->setVisible(true);
     corr_chart->legend()->setAlignment(Qt::AlignBottom);
@@ -492,4 +581,15 @@ void MainWindow::on_spectr_checkBox_stateChanged(int arg1)
         clr_status_text("spectre series are hidden");
         spectre_chart->removeSeries(SPECTR_SERIES);
     }
+}
+
+void MainWindow::on_prepare_btn_clicked()
+{
+
+}
+
+void MainWindow::on_save_btn_clicked()
+{
+    QString pathname = QFileDialog::getSaveFileName(0, "save file");
+    save_wav(DATA, TIME_K, pathname);
 }
