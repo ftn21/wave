@@ -40,14 +40,12 @@ public:
     void clr_status_text(QString text);
 
     QtCharts::QLineSeries *filtered_series;
-    QtCharts::QChart *proc_chart;
-    QtCharts::QChart *spectre_chart;
+    QtCharts::QChart *spectr_chart;
     QtCharts::QChart *wave_chart;
     QtCharts::QLineSeries *corr_series;
     QtCharts::QLineSeries *amp_series;
     QtCharts::QLineSeries *data_series;
     QtCharts::QLineSeries *SPECTR_SERIES;
-    QtCharts::QChart *corr_chart;
 
 private slots:
     void on_open_btn_clicked();
@@ -65,10 +63,6 @@ private slots:
     void on_corr_checkBox_stateChanged(int arg1);
 
     void on_wave_checkBox_stateChanged(int arg1);
-
-    void on_proc_btn_clicked();
-
-    void on_spectr_checkBox_stateChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;

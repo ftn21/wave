@@ -28,7 +28,7 @@ color: rgb(46, 52, 54);</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -71,35 +71,6 @@ color: rgb(46, 52, 54);</string>
        <attribute name="title">
         <string>correlation</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <widget class="QChartView" name="corr_view">
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(243, 236, 224);</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>process</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QChartView" name="proc_view">
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(243, 236, 224);</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
       <widget class="QWidget" name="fileinfo">
        <attribute name="title">
@@ -184,13 +155,6 @@ p, li { white-space: pre-wrap; }
         <widget class="QPushButton" name="corr_btn">
          <property name="text">
           <string>correlation</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="proc_btn">
-         <property name="text">
-          <string>process</string>
          </property>
         </widget>
        </item>
