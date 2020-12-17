@@ -7,7 +7,6 @@
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QBarSeries>
-#include <QtCharts/QScatterSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QLegend>
 #include <QtCharts/QBarCategoryAxis>
@@ -48,7 +47,7 @@ public:
     QtCharts::QChart *corr_chart;
     QtCharts::QLineSeries *corr_series;
     QtCharts::QLineSeries *amp_series;
-    QtCharts::QScatterSeries *jump_series;
+    QtCharts::QLineSeries *jump_series;
     QtCharts::QLineSeries *data_series;
     QtCharts::QLineSeries *SPECTR_SERIES;
 

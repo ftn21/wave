@@ -18,6 +18,7 @@ double TIME_K = 0;
 QList<double> DATA;
 QList<double> T;
 QList<double> jumps;
+QList<double> T_SAMPLE;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -394,7 +395,6 @@ void MainWindow::on_corr_btn_clicked()
 {
     corr_series = new QLineSeries();
     amp_series = new QLineSeries();
-    QLineSeries *jl_series = new QLineSeries();
 
     QList<double> data_sample;
     double time_k_sample, fd_sample;
@@ -417,6 +417,7 @@ void MainWindow::on_corr_btn_clicked()
         mx /= n;
         my /= n;
         amp_series->append(time_k_sample*i, DATA.at(divk*i));
+        T_SAMPLE.append(time_k_sample*i);
 
         //дисперсия
         dx = 0;
@@ -436,13 +437,8 @@ void MainWindow::on_corr_btn_clicked()
         k = k /(sqrt(dx*dy)*n);
         corr_series->append(time_k_sample*i, k);
 
-        if (k > 0.6) {
+        if (k > 0.6)
             jumps.append(time_k_sample*i);
-            jl_series->append(time_k_sample*i, 0.79);
-        }
-        else {
-            jl_series->append(time_k_sample*i, 0);
-        }
     }
 
     //setting chart & adding gui elements
@@ -451,7 +447,6 @@ void MainWindow::on_corr_btn_clicked()
     corr_chart = new QChart();
     corr_chart->addSeries(corr_series);
     corr_chart->addSeries(amp_series);
-    corr_chart->addSeries(jl_series);
     corr_chart->legend()->setVisible(true);
     corr_chart->legend()->setAlignment(Qt::AlignBottom);
     corr_chart->createDefaultAxes();
@@ -510,21 +505,100 @@ void MainWindow::on_save_btn_clicked()
 
 void MainWindow::on_selec_btn_clicked()
 {
-    jump_series = new QScatterSeries();
-    QLineSeries *jl_series = new QLineSeries();
+    double dt, brate, dt_m;
+    dt = 0;
+    brate = 100;
+    dt_m = 3000;
+    jump_series = new QLineSeries();
+    QLineSeries *match_series = new QLineSeries();
 
-    for (int i = 0; i < jumps.length(); i++) {
-        jump_series->append(jumps.at(i), 0);
-        jl_series->append(jumps.at(i), 0);
+    for (int i = 0; i < T_SAMPLE.length(); i++) {
+        for (int j = 0; j < jumps.length(); j++) {
+            if ( jumps.at(j) == T_SAMPLE.at(i) ) {
+                jump_series->append(T_SAMPLE.at(i), 0.79);
+            }
+            else {
+                jump_series->append(T_SAMPLE.at(i), 0);
+            }
+        }
     }
 
-    jump_series->setName("jumps");
-    jump_series->setMarkerShape(QScatterSeries::MarkerShapeCircle);
-    jump_series->setMarkerSize(15.0);
 
-    jl_series->setName("jl");
+    QList<double> merged_jumps;
+    QList<double> n;
+    //слить
+    for (int i = 1; i < jumps.length(); i++) {
+        double sum= 0.0;
+        if ( (jumps.at(i) - jumps.at(i-1)) < 0.001) {
+            n.append(jumps.at(i));
+        }
+        else {
+            if (n.length() > 1) {
+                for (int k = 0; k < n.length(); k++) {
+                    sum += k;
+                }
+                merged_jumps.append(n.at(sum/n.length()));
+                n.clear();
+                sum = 0;
+            }
+        }
+    }
+    if (n.length() > 1) {
+        double sum = 0;
+        for (int k = 0; k < n.length(); k++) {
+            sum += k;
+        }
+        merged_jumps.append(n.at(sum/n.length()));
+        n.clear();
+        sum = 0;
+    }
+
+
+    QLineSeries *m_j = new QLineSeries();
+    for (int i = 0; i < T_SAMPLE.length(); i++) {
+        for (int j = 0; j < merged_jumps.length(); j++) {
+            if ( merged_jumps.at(j) == T_SAMPLE.at(i) ) {
+                m_j->append(T_SAMPLE.at(i), 0.3);
+            }
+            else {
+                m_j->append(T_SAMPLE.at(i), 0);
+            }
+        }
+    }
+
+
+    //подбор
+    for (int i = 0; i < dt_m; i++) {
+        for (int j = 100; j < 250; j++) {
+            double step = 60/brate;
+            QVector<double> sound(7);
+            sound[0] = dt + 1.0*step;
+            sound[1] = dt + 2.0*step;
+            sound[2] = dt + 3.0*step;
+            sound[3] = dt + 5.0*step;
+            sound[4] = dt + 6.5*step;
+            sound[5] = dt + 8.0*step;
+            sound[6] = dt + 9.0*step;
+
+            bool match = true;
+            for (int k = 0; k < 4; k++) {
+                if ((sound.at(k+1) - merged_jumps.at(k)) > 0.01) {
+                    match = false;
+                }
+            }
+
+            if (match) {
+                qDebug() << "dt = " << i;
+                qDebug() << "brate = " << j;
+            }
+        }
+    }
+
+
+    jump_series->setName("matches");
+    m_j->setName("merged");
 
     corr_chart->addSeries(jump_series);
-    corr_chart->addSeries(jl_series);
+    corr_chart->addSeries(m_j);
     corr_chart->legend()->setMarkerShape(QLegend::MarkerShapeFromSeries);
 }

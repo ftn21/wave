@@ -28,7 +28,7 @@ color: rgb(46, 52, 54);</string>
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -74,6 +74,23 @@ color: rgb(46, 52, 54);</string>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <widget class="QChartView" name="corr_view">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(243, 236, 224);</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>selection</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QChartView" name="select_view">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(243, 236, 224);</string>
           </property>
