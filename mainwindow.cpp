@@ -17,6 +17,7 @@ double FD = 0;
 double TIME_K = 0;
 QList<double> DATA;
 QList<double> T;
+QList<double> jumps;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -145,6 +146,95 @@ void MainWindow::read_wav(QString pathname, QList<double> *data, double *time_k,
         // Audio format 1=PCM,6=mulaw,7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
         //ui->textBrowser->append( "Block align:  " + QString::number(wavHeader.blockAlign ) );
     }
+    fclose(wavFile);
+}
+
+void MainWindow::save_wav(QList<double> data, double time_k, QString pathname) {
+    wav_hdr wavHeader;
+    int headerSize = sizeof(wav_hdr), filelength = 0;
+
+    char c = 'R';
+    char *pc = &c;
+    wavHeader.RIFF[0] = *pc;
+    c = 'I';
+    wavHeader.RIFF[1] = *pc;
+    c = 'F';
+    wavHeader.RIFF[2] = *pc;
+    c = 'F';
+    wavHeader.RIFF[3] = *pc;
+
+    c = 'W';
+    wavHeader.WAVE[0] = *pc;
+    c = 'A';
+    wavHeader.WAVE[1] = *pc;
+    c = 'V';
+    wavHeader.WAVE[2] = *pc;
+    c = 'E';
+    wavHeader.WAVE[3] = *pc;
+
+    c = 'f';
+    wavHeader.fmt[0] = *pc;
+    c = 'm';
+    wavHeader.fmt[1] = *pc;
+    c = 't';
+    wavHeader.fmt[2] = *pc;
+    c = ' ';
+    wavHeader.fmt[3] = *pc;
+
+    wavHeader.Subchunk1Size = 16;
+    wavHeader.AudioFormat = 1;
+    wavHeader.NumOfChan = 1;
+    wavHeader.SamplesPerSec = round(1 / time_k);
+
+    wavHeader.blockAlign = 2;
+    wavHeader.bytesPerSec= wavHeader.SamplesPerSec * wavHeader.blockAlign;
+
+    /*
+        wavHeader.bytesPerSec = 2;
+        wavHeader.blockAlign = wavHeader.SamplesPerSec * wavHeader.blockAlign;
+        */
+
+    wavHeader.bitsPerSample = wavHeader.blockAlign*8;
+
+    c = 'd';
+    wavHeader.Subchunk2ID[0] = *pc;
+    c = 'a';
+    wavHeader.Subchunk2ID[1] = *pc;
+    c = 't';
+    wavHeader.Subchunk2ID[2] = *pc;
+    c = 'a';
+    wavHeader.Subchunk2ID[3] = *pc;
+
+    wavHeader.Subchunk2Size = wavHeader.blockAlign*data.length();
+    wavHeader.ChunkSize = wavHeader.Subchunk2Size + 36;
+
+    cout << "File is                    :" << filelength << " bytes." << endl;
+    cout << "RIFF header                :" << wavHeader.RIFF[0] << wavHeader.RIFF[1] << wavHeader.RIFF[2] << wavHeader.RIFF[3] << endl;
+    cout << "WAVE header                :" << wavHeader.WAVE[0] << wavHeader.WAVE[1] << wavHeader.WAVE[2] << wavHeader.WAVE[3] << endl;
+    cout << "FMT                        :" << wavHeader.fmt[0] << wavHeader.fmt[1] << wavHeader.fmt[2] << wavHeader.fmt[3] << endl;
+    cout << "Data size                  :" << wavHeader.ChunkSize << endl;
+    cout << "Sampling Rate              :" << wavHeader.SamplesPerSec << endl;
+    cout << "Number of bits used        :" << wavHeader.bitsPerSample << endl;
+    cout << "Number of channels         :" << wavHeader.NumOfChan << endl;
+    cout << "Number of bytes per second :" << wavHeader.bytesPerSec << endl;
+    cout << "Data length                :" << wavHeader.Subchunk2Size << endl;
+    cout << "Audio Format               :" << wavHeader.AudioFormat << endl;
+    cout << "Block align                :" << wavHeader.blockAlign << endl;
+    cout << "Data string                :" << wavHeader.Subchunk2ID[0] << wavHeader.Subchunk2ID[1] << wavHeader.Subchunk2ID[2] << wavHeader.Subchunk2ID[3] << endl;
+
+    string fp = pathname.toStdString();
+    const char* filePath = fp.c_str();
+
+    FILE* wavFile = fopen(filePath, "w");
+    fwrite(&wavHeader, 1, headerSize, wavFile);
+
+    short int w = 0;
+    for (int i = 0; i < data.length(); i++) {
+        w = round(data[i]*32768);
+        fwrite(&w, 2 , 1, wavFile);
+    }
+    cout << sizeof(w);
+
     fclose(wavFile);
 }
 
@@ -304,16 +394,17 @@ void MainWindow::on_corr_btn_clicked()
 {
     corr_series = new QLineSeries();
     amp_series = new QLineSeries();
+    QLineSeries *jl_series = new QLineSeries();
 
     QList<double> data_sample;
     double time_k_sample, fd_sample;
     double mx, my, dx, dy, k;
 
-    read_wav("/home/mitya/Documents/MAI/5sem/StatDin/clave_sample.wav", &data_sample, &time_k_sample, &fd_sample);
+    read_wav("/home/mitya/Documents/MAI/5sem/StatDin/clave_sample2_v.wav", &data_sample, &time_k_sample, &fd_sample);
 
-    int divk = round(time_k_sample / TIME_K);
-    double count = (DATA.length() + 1) / divk - data_sample.length();
+    double count = DATA.length() - data_sample.length();
     double n = data_sample.length();
+    int divk = ceil( (count*TIME_K) / 100 );
 
     //мат ожидание
     for (int i = 0; i < count; i++) {
@@ -326,10 +417,8 @@ void MainWindow::on_corr_btn_clicked()
         mx /= n;
         my /= n;
         amp_series->append(time_k_sample*i, DATA.at(divk*i));
-    }
 
-    //дисперсия
-    for (int i = 0; i < count; i++) {
+        //дисперсия
         dx = 0;
         dy = 0;
         for (int j = 0; j < n; j++) {
@@ -338,24 +427,38 @@ void MainWindow::on_corr_btn_clicked()
         }
         dx /= n;
         dy /= n;
-    }
 
-    //корреляция
-    for (int i = 0; i < count; i++) {
+        //корреляция
         k = 0;
         for (int j = 0; j < n; j++) {
             k += ( DATA.at(divk*i + j) - mx ) * ( data_sample.at(j) - my );
         }
-        k /= sqrt(dx*dy);
+        k = k /(sqrt(dx*dy)*n);
         corr_series->append(time_k_sample*i, k);
+
+        if (k > 0.6) {
+            jumps.append(time_k_sample*i);
+            jl_series->append(time_k_sample*i, 0.79);
+        }
+        else {
+            jl_series->append(time_k_sample*i, 0);
+        }
     }
 
-    //adding gui elements
+    //setting chart & adding gui elements
     amp_series->setName("amps");
     corr_series->setName("correlation");
-    wave_chart->addSeries(amp_series);
-    wave_chart->addSeries(corr_series);
-    ui->wave_view->repaint();
+    corr_chart = new QChart();
+    corr_chart->addSeries(corr_series);
+    corr_chart->addSeries(amp_series);
+    corr_chart->addSeries(jl_series);
+    corr_chart->legend()->setVisible(true);
+    corr_chart->legend()->setAlignment(Qt::AlignBottom);
+    corr_chart->createDefaultAxes();
+    corr_chart->setTheme(QChart::ChartThemeBrownSand);
+    corr_chart->setAnimationOptions(QChart::NoAnimation);
+
+    ui->corr_view->setChart(corr_chart);
 
     //btns&checkBoxes
     ui->corr_btn->setEnabled(false);
@@ -367,11 +470,11 @@ void MainWindow::on_amps_checkBox_stateChanged(int arg1)
 {
     if (arg1 == 2) {
         clr_status_text("amps series are showed");
-        wave_chart->addSeries(amp_series);
+        corr_chart->addSeries(amp_series);
     }
     else {
         clr_status_text("amp series are hidden");
-        wave_chart->removeSeries(amp_series);
+        corr_chart->removeSeries(amp_series);
     }
 }
 
@@ -379,11 +482,11 @@ void MainWindow::on_corr_checkBox_stateChanged(int arg1)
 {
     if (arg1 == 2) {
         clr_status_text("correlation series are showed");
-        wave_chart->addSeries(corr_series);
+        corr_chart->addSeries(corr_series);
     }
     else {
         clr_status_text("correlation series are hidden");
-        wave_chart->removeSeries(corr_series);
+        corr_chart->removeSeries(corr_series);
     }
 }
 
@@ -397,4 +500,31 @@ void MainWindow::on_wave_checkBox_stateChanged(int arg1)
         clr_status_text("wave series are hidden");
         wave_chart->removeSeries(data_series);
     }
+}
+
+void MainWindow::on_save_btn_clicked()
+{
+    QString pathname = QFileDialog::getSaveFileName(0, "save file");
+    save_wav(DATA, TIME_K, pathname);
+}
+
+void MainWindow::on_selec_btn_clicked()
+{
+    jump_series = new QScatterSeries();
+    QLineSeries *jl_series = new QLineSeries();
+
+    for (int i = 0; i < jumps.length(); i++) {
+        jump_series->append(jumps.at(i), 0);
+        jl_series->append(jumps.at(i), 0);
+    }
+
+    jump_series->setName("jumps");
+    jump_series->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+    jump_series->setMarkerSize(15.0);
+
+    jl_series->setName("jl");
+
+    corr_chart->addSeries(jump_series);
+    corr_chart->addSeries(jl_series);
+    corr_chart->legend()->setMarkerShape(QLegend::MarkerShapeFromSeries);
 }
