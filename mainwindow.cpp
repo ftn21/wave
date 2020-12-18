@@ -363,7 +363,7 @@ void MainWindow::on_fourier_btn_clicked()
 void MainWindow::on_filter_btn_clicked()
 {
     //filter
-    do_filter(&ampfreq, 60);
+    do_filter(&ampfreq, 0.015);
     clr_status_text("data filtered");
 
     //draw
@@ -506,8 +506,7 @@ void MainWindow::on_save_btn_clicked()
 void MainWindow::on_selec_btn_clicked()
 {
     double dt, brate, dt_m;
-    dt = 0;
-    brate = 100;
+    brate = 0.0;
     dt_m = 3000;
     jump_series = new QLineSeries();
     QLineSeries *match_series = new QLineSeries();
@@ -554,11 +553,11 @@ void MainWindow::on_selec_btn_clicked()
     }
 
 
-    QLineSeries *m_j = new QLineSeries();
+    m_j = new QLineSeries();
     for (int i = 0; i < T_SAMPLE.length(); i++) {
         for (int j = 0; j < merged_jumps.length(); j++) {
             if ( merged_jumps.at(j) == T_SAMPLE.at(i) ) {
-                m_j->append(T_SAMPLE.at(i), 0.3);
+                m_j->append(T_SAMPLE.at(i), 1.0);
             }
             else {
                 m_j->append(T_SAMPLE.at(i), 0);
@@ -568,37 +567,69 @@ void MainWindow::on_selec_btn_clicked()
 
 
     //подбор
-    for (int i = 0; i < dt_m; i++) {
+    QVector<double> sound(7);
+    for (int i = -3000; i < 0; i++) {
+        double step = 0;
         for (int j = 100; j < 250; j++) {
-            double step = 60/brate;
-            QVector<double> sound(7);
-            sound[0] = dt + 1.0*step;
-            sound[1] = dt + 2.0*step;
-            sound[2] = dt + 3.0*step;
-            sound[3] = dt + 5.0*step;
-            sound[4] = dt + 6.5*step;
-            sound[5] = dt + 8.0*step;
-            sound[6] = dt + 9.0*step;
+            step = 60.0 / double(j);
+            sound[0] = double(i)/1000.0 + 1.0*step;
+            sound[1] = double(i)/1000.0 + 2.0*step;
+            sound[2] = double(i)/1000.0 + 3.0*step;
+            sound[3] = double(i)/1000.0 + 5.0*step;
+            sound[4] = double(i)/1000.0 + 6.5*step;
+            sound[5] = double(i)/1000.0 + 8.0*step;
+            sound[6] = double(i)/1000.0 + 9.0*step;
 
             bool match = true;
+
+            if (i == 282)
+                qDebug() << "bum";
+
+            double diffr;
             for (int k = 0; k < 4; k++) {
-                if ((sound.at(k+1) - merged_jumps.at(k)) > 0.01) {
+                double bouble = sound.at(k+1);
+                double trouble = merged_jumps.at(k);
+                diffr = sound.at(k+1) - merged_jumps.at(k);
+
+                if ( abs(diffr) > 0.001 )
                     match = false;
-                }
             }
 
             if (match) {
-                qDebug() << "dt = " << i;
-                qDebug() << "brate = " << j;
+                clr_status_text("dt = " + QString::number(abs(i)) + ", bitRate = " + QString::number(j));
+                match_series = new QLineSeries();
+                for (int i = 0; i < T_SAMPLE.length(); i++) {
+                    for (int j = 0; j < sound.length(); j++) {
+                        if ( abs(sound.at(j) - T_SAMPLE.at(i))  < 0.001) {
+                            match_series->append(T_SAMPLE.at(i), 0.5);
+                        }
+                        else {
+                            match_series->append(T_SAMPLE.at(i), 0.0);
+                        }
+                    }
+                }
             }
         }
     }
 
 
-    jump_series->setName("matches");
-    m_j->setName("merged");
 
-    corr_chart->addSeries(jump_series);
+    jump_series->setName("corr > 0.6");
+    m_j->setName("corr > 0.6");
+    match_series->setName("MATCH");
+
+    //corr_chart->addSeries(jump_series);
     corr_chart->addSeries(m_j);
+    corr_chart->addSeries(match_series);
     corr_chart->legend()->setMarkerShape(QLegend::MarkerShapeFromSeries);
+}
+
+void MainWindow::on_jumps_stateChanged(int arg1)
+{
+    if (arg1 == 2) {
+        corr_chart->addSeries(m_j);
+    }
+    else {
+        corr_chart->removeSeries(m_j);
+    }
 }

@@ -48,6 +48,7 @@ public:
     QtCharts::QLineSeries *corr_series;
     QtCharts::QLineSeries *amp_series;
     QtCharts::QLineSeries *jump_series;
+    QtCharts::QLineSeries *m_j;
     QtCharts::QLineSeries *data_series;
     QtCharts::QLineSeries *SPECTR_SERIES;
 
@@ -71,6 +72,8 @@ private slots:
     void on_save_btn_clicked();
 
     void on_selec_btn_clicked();
+
+    void on_jumps_stateChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
